@@ -1,0 +1,403 @@
+package p;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.concurrent.locks.ReentrantLock;
+
+public class hw2b {
+	static HashMap<Flight, ArrayList<Passenger>> data = new HashMap<Flight, ArrayList<Passenger>>();
+
+	public static void main(String[] args) throws IOException, InterruptedException {
+		FileReader fr = new FileReader("D:\\flight_database.txt");
+		BufferedReader br = new BufferedReader(fr);
+		ArrayList<Passenger> totalPass = new ArrayList<Passenger>();
+		ArrayList<Flight> totalFlights = new ArrayList<Flight>();
+		if (fr != null) {
+			String currline;
+			while ((currline = br.readLine()) != null) {
+				String[] arey = currline.split("\n");
+				String[] commas = arey[0].split(",");
+				Flight f = new Flight(Integer.parseInt(commas[0]), Integer.parseInt(commas[1]));
+				totalFlights.add(f);
+				int thisCount=0;
+				ArrayList<Passenger> passen = new ArrayList<Passenger>();
+				for (int i = 2; i < commas.length; i++) {
+					thisCount++;
+					int val = Integer.parseInt(commas[i]);
+					boolean checkFlag = false;
+					for (Passenger p : totalPass) {
+						if (p.id == val) {
+							passen.add(p);
+							p.plist.add(f);
+							checkFlag = true;
+						}
+					}
+					if (checkFlag == false) {
+						Passenger pass = new Passenger(val);
+						totalPass.add(pass);
+						pass.plist.add(f);
+						passen.add(pass);
+					}
+				}
+				f.capacity=thisCount;
+				data.put(f, passen);
+			}
+		}
+		int lt = 1;
+		int rt = 101;
+		int lo = 1;
+		int ro = 71;
+		Database db = new Database(data);
+		Thread[] arr = new Thread[15];
+		for (int i = 0; i < 15; i++) {
+			int res = random(lt,rt);
+			if (res >= 1 && res <= 20) {
+				int obj = random(lo,ro);
+				boolean checkFlag = false;
+				Passenger p1 = null;
+				for (Passenger p : totalPass) {
+					if (p.id == obj) {
+						p1 = p;
+						checkFlag = true;
+					}
+				}
+				if (checkFlag == false) {
+					p1 = new Passenger(obj);
+				}
+				int fli = random(111, 121);
+				Flight f1 = null;
+				for (Flight f : totalFlights) {
+					if (f.name == fli) {
+						f1 = f;
+					}
+				}
+				arr[i] = new Thread(new Transacation(db, f1, p1, null, 1,null));
+				arr[i].start();
+			} else if (res >= 21 && res <= 40) {
+				int obj = random(lo, ro);
+				boolean checkFlag = false;
+				Passenger p1 = null;
+				for (Passenger p : totalPass) {
+					if (p.id == obj) {
+						p1 = p;
+						checkFlag = true;
+					}
+				}
+				if (checkFlag == false) {
+					p1 = new Passenger(obj);
+				}
+				int fli = random(112, 113);
+				Flight f1 = null;
+				for (Flight f : totalFlights) {
+					if (f.name == fli) {
+						f1 = f;
+					}
+				}
+				arr[i] = new Thread(new Transacation(db, f1, p1, null, 2,null));
+				arr[i].start();
+				arr[i].join();
+			} else if (res >= 41 && res <= 60) {
+				int obj = random(lo, ro);
+				boolean checkFlag = false;
+				Passenger p1 = null;
+				for (Passenger p : totalPass) {
+					if (p.id == obj) {
+						p1 = p;
+						checkFlag = true;
+					}
+				}
+				if (checkFlag == false) {
+					p1 = new Passenger(obj);
+				}
+				arr[i] = new Thread(new Transacation(db, null, p1, null, 3,null));
+				arr[i].start();
+			} else if (res >= 61 && res <= 80) {
+				arr[i] = new Thread(new Transacation(db, null, null, null, 4,totalFlights));
+				arr[i].start();
+			} else {
+				int obj = random(lo, ro);
+				boolean checkFlag = false;
+				Passenger p1 = null;
+				for (Passenger p : totalPass) {
+					if (p.id == obj) {
+						p1 = p;
+						checkFlag = true;
+					}
+				}
+				if (checkFlag == false) {
+					p1 = new Passenger(obj);
+				}
+				int fli = random(111, 121);
+				Flight f1 = null;
+				for (Flight f : totalFlights) {
+					if (f.name == fli) {
+						f1 = f;
+					}
+				}
+				fli = random(111, 121);
+				Flight f2 = null;
+				for (Flight f : totalFlights) {
+					if (f.name == fli) {
+						f2 = f;
+					}
+				}
+				arr[i] = new Thread(new Transacation(db, f1, p1, f2, 5,null));
+				arr[i].start();
+			}
+		}
+		for (int j = 0; j < 15; j++) {
+			arr[j].join();
+		}
+		for (Flight f : db.data.keySet()) {
+			System.out.print(f.name + " " + f.capacity + " ");
+			ArrayList<Passenger> out = db.data.get(f);
+			for (Passenger p : out) {
+				System.out.print(p.id + " ");
+			}
+			System.out.println();
+		}
+
+	}
+
+	public static int random(int l, int h) {
+		Random r = new Random();
+		int resu = r.nextInt(h - l) + l;
+		return resu;
+	}
+}
+
+class Database {
+	HashMap<Flight, ArrayList<Passenger>> data;
+	public Database(HashMap<Flight, ArrayList<Passenger>> d) {
+		data = d;
+	}
+}
+
+class Passenger {
+	int id;
+	ArrayList<Flight> plist=new ArrayList<Flight>();
+	ReentrantLock LockP = new ReentrantLock();
+	public Passenger(int i) {
+		id = i;
+	}
+}
+
+class Flight {
+	int name;
+	int capacity;
+	int occupied=0;
+	ReentrantLock LockF = new ReentrantLock();
+	public Flight(int n, int cap) {
+		name = n;
+		capacity = cap;
+	}
+}
+
+class Transacation extends Thread {
+	Database D1;
+	Flight f;
+	Passenger ID;
+	Flight last;
+	boolean reser = false;
+	int which;
+	ArrayList<Flight> list;
+
+	public Transacation(Database d, Flight fli, Passenger pass, Flight f2, int w,ArrayList<Flight> lSt) {
+		D1 = d;
+		f = fli;
+		ID = pass;
+		last = f2;
+		which = w;
+		list=lSt;
+	}
+
+	public void run() {
+		if (which == 1) {
+			reserve();
+		} else if (which == 2) {
+			cancel();
+		} else if (which == 3) {
+			my_flight();
+		} else if (which == 4) {
+			total_reservation();
+		} else {
+			transfer();
+		}
+	}
+
+	public void reserve() {
+		ConcurrencyControlManager.setLockFlight(f);
+		ConcurrencyControlManager.setLockPassenger(ID);
+			boolean left = getCurrentSize(f.capacity, D1.data.get(f));
+			if (left == true) {
+				if (D1.data.containsKey(f)) {
+					ArrayList<Passenger> res = D1.data.get(f);
+					boolean cFlag = false;
+					for (Passenger p : res) {
+						if (p.id == ID.id) {
+							cFlag = true;
+						}
+					}
+					if (cFlag == false) {
+						f.capacity+=1;
+						res.add(ID);
+						ID.plist.add(f);
+					}
+					D1.data.put(f, res);
+				}
+			}
+		ConcurrencyControlManager.unlockPassenger(ID);
+		ConcurrencyControlManager.unlockFlight(f);
+	}
+
+	public void cancel() {
+		ConcurrencyControlManager.setLockFlight(f);
+		ConcurrencyControlManager.setLockPassenger(ID);
+		if (D1.data.containsKey(f)) {
+			ArrayList<Passenger> res = D1.data.get(f);
+			for (int i = 0; i < res.size(); i++) {
+				if (res.get(i).id == ID.id) {
+					res.remove(i);
+					f.capacity-=1;
+					ID.plist.remove(f);
+					break;
+				}
+			}
+			D1.data.put(f, res);
+		}
+		ConcurrencyControlManager.unlockPassenger(ID);
+		ConcurrencyControlManager.unlockFlight(f);
+	}
+
+	public ArrayList<Flight> my_flight() {
+		ConcurrencyControlManager.setLockPassenger(ID);
+		ArrayList<Flight> fl = new ArrayList<Flight>();
+		for(Flight p:ID.plist) {
+			fl.add(p);
+		}
+		// for(Flight fll:fl) {
+		// System.out.print(fll.name+" ");
+		// }
+		// System.out.println();
+		ConcurrencyControlManager.unlockPassenger(ID);;
+		return fl;
+	}
+
+	public int total_reservation() {
+		int count = 0;
+		for(int i=0;i<list.size();i++) {
+			ConcurrencyControlManager.setLockFlight(list.get(i));
+			count+=list.get(i).capacity;
+		}
+		for(int i=list.size()-1;i>=0;i--) {
+			ConcurrencyControlManager.unlockFlight(list.get(i));
+		}
+		// System.out.println(count);
+		return count;
+	}
+
+	public void transfer() {
+		boolean reverse= false;
+		if(f.name<last.name) {
+			ConcurrencyControlManager.setLockFlight(f);
+			ConcurrencyControlManager.setLockFlight(last);
+			ConcurrencyControlManager.setLockPassenger(ID);
+		}
+		else {
+			reverse=true;
+			ConcurrencyControlManager.setLockFlight(last);
+			ConcurrencyControlManager.setLockFlight(f);
+			ConcurrencyControlManager.setLockPassenger(ID);
+		}
+		ArrayList<Passenger> res = D1.data.get(f);
+		boolean found = false;
+		for (Passenger val : res) {
+			if (val.id == ID.id) {
+				found = true;
+				break;
+			}
+		}
+		boolean left = getCurrentSize(last.capacity, D1.data.get(last));
+		if (found == true) {
+			if (left == true) {
+				if (D1.data.containsKey(f)) {
+					ArrayList<Passenger> res1 = D1.data.get(f);
+					for (int i = 0; i < res1.size(); i++) {
+						if (res1.get(i).id == ID.id) {
+							res1.remove(i);
+							break;
+						}
+					}
+					D1.data.put(f, res1);
+					if (D1.data.containsKey(last)) {
+						ArrayList<Passenger> res2 = D1.data.get(last);
+						boolean cFlag = false;
+						for (Passenger p : res2) {
+							if (p.id == ID.id) {
+								cFlag = true;
+							}
+						}
+						if (cFlag == false) {
+							res2.add(ID);
+						}
+						D1.data.put(last, res2);
+					}
+				}
+			}
+		}
+		if(reverse==false) {
+			ConcurrencyControlManager.unlockPassenger(ID);
+			ConcurrencyControlManager.unlockFlight(last);
+			ConcurrencyControlManager.unlockFlight(f);
+		}
+		else {
+			ConcurrencyControlManager.unlockPassenger(ID);
+			ConcurrencyControlManager.unlockFlight(f);
+			ConcurrencyControlManager.unlockFlight(last);
+		}
+	}
+
+	public boolean getCurrentSize(int limit, ArrayList<Passenger> arey) {
+		boolean left = false;
+		int count = 0;
+		for (Passenger pp : arey) {
+			if (pp.id != 0) {
+				count++;
+			}
+		}
+		if (count <= limit) {
+			left = true;
+		}
+		return left;
+	}
+
+}
+
+class ConcurrencyControlManager {
+	public static void setLockFlight(Flight f) {
+		boolean finish=false;
+		while (!finish) {
+			if (f.LockF.tryLock()) {
+				finish = true;
+			}
+		}
+	}
+	public static void setLockPassenger(Passenger p) {
+		boolean finish=false;
+		while (!finish) {
+			if (p.LockP.tryLock()) {
+				finish = true;
+			}
+		}
+	}
+	public static void unlockFlight(Flight f) {
+		f.LockF.unlock();
+	}
+	public static void unlockPassenger(Passenger p) {
+		p.LockP.unlock();
+	}
+}
+
