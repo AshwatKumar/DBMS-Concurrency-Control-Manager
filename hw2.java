@@ -13,118 +13,238 @@ import java.util.StringTokenizer;
 
 public class hw2
 {
+	static HashMap<Flight,ArrayList<Passenger>> data = new HashMap<Flight,ArrayList<Passenger>>();
 	public static void main( String[] args ) throws IOException
 	{
-	//	Reader.init(System.in);
-		HashMap<String,ArrayList<Integer>> data = null;
 		FileReader fr = new FileReader("C:\\Users\\HP\\Desktop\\flight_database.txt");
 		BufferedReader br = new BufferedReader(fr);
 		if ( fr != null )
 		{
 			String currline;
-			data = new HashMap<String,ArrayList<Integer>>();
 			while ( ( currline = br.readLine() ) != null )
 			{
 				String[] arey = currline.split("\n");
 				String[] commas = arey[0].split(",");
-				ArrayList<Integer> ele = new ArrayList<Integer>();
-				for ( int i = 1; i < commas.length ; i++ )
+				Flight f = new Flight(Integer.parseInt(commas[0]),Integer.parseInt(commas[1]));
+				ArrayList<Passenger> passen = new ArrayList<Passenger>();
+				for ( int i = 2 ; i < commas.length ; i++ )
 				{
-					ele.add(Integer.parseInt(commas[i]));
+					int val = Integer.parseInt(commas[i]);
+					Passenger pass = new Passenger(val);
+					passen.add(pass);
 				}
-				data.put(commas[0],ele);
+				data.put(f,passen);
 			}
 		}
-		Transacation t1 = new Transacation(data);
-		Transacation t2 = new Transacation(data);
-		Transacation t3 = new Transacation(data);
+		int lt = 1;int rt = 101;
+		int lo = 1;int ro = 71;
+		Database db = new Database(data);
+		for ( int i = 0 ; i < 15 ; i++ )
+		{
+			int res = random(lt,rt);
+			if ( res >= 1 && res <= 20 )
+			{
+				int obj = random(lo,ro);
+				Passenger p = new Passenger(obj);
+				int fli = random(111,121);
+				int cap = getCapacity(fli);
+				Flight flight = new Flight(fli,cap);
+				Transacation t = new Transacation(db,flight,p,null,1);
+	
+			}
+			else if ( res >= 21 && res <= 40 )
+			{
+				int obj = random(lo,ro);
+				Passenger p = new Passenger(obj);
+				int fli = random(111,121);
+				int cap = getCapacity(fli);
+				Flight flight = new Flight(fli,cap);
+				Transacation t = new Transacation(db,flight,p,null,2);
+			}
+			else if ( res >= 41 && res <= 60 )
+			{
+				int obj = random(lo,ro);
+				Passenger p = new Passenger(obj);
+				Transacation t = new Transacation(db,null,p,null,3);
+			}
+			else if ( res >= 61 && res <= 80 )
+			{
+				Transacation t = new Transacation(db,null,null,null,4);
+			}
+			else
+			{
+				int obj = random(lo,ro);
+				Passenger p = new Passenger(obj);
+				int fli1 = random(111,121);
+				int cap1 = getCapacity(fli1);
+				Flight flight1 = new Flight(fli1,cap1);
+				
+				int fli2 = random(111,121);
+				int cap2 = getCapacity(fli2);
+				Flight flight2 = new Flight(fli2,cap2);
+				
+				Transacation t = new Transacation(db,flight1,p,flight2,5);
+			}
+		}
 		
 	}
-}
-
-class Transacation
-{
-	HashMap<String,ArrayList<Integer>> data;
-	public Transacation( HashMap<String,ArrayList<Integer>> d )
-	{
-		data = d;
-	}
 	
-	public int random( int l , int h )
+	public static int random( int l , int h )
 	{
 		Random r = new Random();
 		int resu = r.nextInt(h-l)+l;
 		return resu;
 	}
 	
+	public static int getCapacity( int id )
+	{
+		int cap = 0;
+		for ( Flight f : data.keySet() )
+		{
+			if ( f.name == id )
+			{
+				cap = f.capacity;
+				break;
+			}
+		}
+		return cap;
+	}
+}
+
+class Database
+{
+	HashMap<Flight,ArrayList<Passenger>> data;
+	public Database( HashMap<Flight,ArrayList<Passenger>> d )
+	{
+		data =d;
+	}
+}
+
+class Passenger
+{
+	int id;
+	public Passenger( int i )
+	{
+		id = i;
+	}
+}
+
+class Flight
+{
+	int name;
+	int capacity;
+	public Flight( int n , int cap )
+	{
+		name = n;
+		capacity = cap;
+	}
+}
+
+
+class Transacation extends Thread
+{
+	HashMap<Flight,ArrayList<Passenger>> data;
+	Flight f;
+	Passenger id;
+	Flight last;
+	boolean reser = false;
+	int which;
+	
+	public Transacation( Database d , Flight fli , Passenger pass , Flight f2 , int w )
+	{
+		data = d.data;
+		f = fli;
+		pass = id;
+		last = f2;
+		which = w;
+	}
+	
 	public void run()
 	{
-		int result = random(1,6);
-		String flight = "Flight "+String.valueOf(result);
-		int res2 = random(1,71);
-		
-		if ( result == 1 )
+		 if ( which == 1 )
+		 {
+			 reserve();
+		 }
+		 else if ( which == 2 )
+		 {
+			 cancel();
+		 }
+		 else if ( which == 3 )
+		 {
+			 my_flight();
+		 }
+		 else if ( which == 4 )
+		 {
+			 total_reservation();
+		 }
+		 else
+		 {
+			 transfer();
+		 }
+	}
+	
+	public void reserve()
+	{
+		if ( reser == false )
 		{
-			reserve(flight,res2);
-		}
-		else if ( result == 2 )
-		{
-			cancel(flight,res2);
-		}
-		else if ( result == 3 )
-		{
-			my_flight(res2);
-		}
-		else if ( result == 4 )
-		{
-			total_reservation();
+			boolean left = getCurrentSize(f.capacity,data.get(f));
+			if ( left == true )
+			{
+				if ( data.containsKey(f) )
+				{
+					ArrayList<Passenger> res = data.get(f);
+					res.add(id);
+					//f = new Flight(f.name,f.capacity+1);
+					data.put(f,res);
+				}
+			}
 		}
 		else
 		{
-			int res3 = random(1,6);
-			String fli2= "Flight "+String.valueOf(result);
-			transfer(flight,fli2,res2);
+			reser = false;
+			boolean left = getCurrentSize(last.capacity,data.get(last));
+			if ( left == true )
+			{
+				if ( data.containsKey(last) )
+				{
+					ArrayList<Passenger> res = data.get(last);
+					res.add(id);
+					//f = new Flight(f.name,f.capacity+1);
+					data.put(last,res);
+				}
+			}
 		}
 	}
 	
-	public void reserve(String f , Integer id )
+	public void cancel()
 	{
 		if ( data.containsKey(f) )
 		{
-			ArrayList<Integer> res = data.get(f);
-			res.add(id);
-			data.put(f,res);
-		}
-	}
-	
-	public void cancel( String f , Integer id )
-	{
-		if ( data.containsKey(f) )
-		{
-			ArrayList<Integer> res = data.get(f);
+			ArrayList<Passenger> res = data.get(f);
 			int pos = 0;
 			for ( int i = 0 ; i < res.size() ; i++ )
 			{
-				if ( res.get(i) == id )
+				if ( res.get(i).id == id.id )
 				{
 					pos = i;
 					break;
 				}
 			}
-			res.set(pos,0);
+			res.set(pos,new Passenger(0));
+			//f = new Flight(f.name,f.capacity-1);
 			data.put(f,res);
 		}
 	}
 	
-	public int my_flight( Integer id )
+	public int my_flight()
 	{
 		int count = 0;
-		for ( String key : data.keySet() )
+		for ( Flight key : data.keySet() )
 		{
-			ArrayList<Integer> output = data.get(key);
-			for ( Integer it : output )
+			ArrayList<Passenger> output = data.get(key);
+			for ( Passenger it : output )
 			{
-				if ( it == id )
+				if ( it.id == id.id )
 				{
 					count++;
 				}
@@ -136,12 +256,12 @@ class Transacation
 	public int total_reservation()
 	{
 		int count = 0;
-		for ( String key : data.keySet() )
+		for ( Flight key : data.keySet() )
 		{
-			ArrayList<Integer> output = data.get(key);
-			for ( Integer it : output )
+			ArrayList<Passenger> output = data.get(key);
+			for ( Passenger it : output )
 			{
-				if ( it != 0 )
+				if ( it.id != 0 )
 				{
 					count++;
 				}
@@ -150,23 +270,46 @@ class Transacation
 		return count;
 	}
 	
-	public void transfer( String f1 , String f2 , Integer id )
+	public void transfer()
 	{
-		ArrayList<Integer> res = data.get(f1);
+		ArrayList<Passenger> res = data.get(f);
 		boolean found = false;
-		for ( Integer val : res )
+		for ( Passenger val : res )
 		{
-			if ( val == id )
+			if ( val.id == id.id )
 			{
 				found = true;
 				break;
 			}
 		}
+		
+		boolean left = getCurrentSize(last.capacity,data.get(last));
 		if ( found == true )
 		{
-			cancel(f1,id);
-			reserve(f2,id);
+			if ( left == true )
+			{
+				cancel();
+				reser = true;
+				reserve();
+			}
 		}
 	}
 	
+	public boolean getCurrentSize(int limit,ArrayList<Passenger> arey)
+	{
+		boolean left = false;
+		int count = 0;
+		for ( Passenger pp : arey )
+		{
+			if ( pp.id != 0 )
+			{
+				count++;
+			}
+		}
+		if ( count <= limit )
+		{
+			left = true;
+		}
+		return left;
+	}
 }
