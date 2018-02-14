@@ -1,108 +1,196 @@
-
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
-import java.util.StringTokenizer;
+import java.util.concurrent.locks.ReentrantLock;
 
-public class hw2
-{
-	static HashMap<Flight,ArrayList<Passenger>> data = new HashMap<Flight,ArrayList<Passenger>>();
-	public static void main( String[] args ) throws IOException
-	{
-		FileReader fr = new FileReader("C:\\Users\\HP\\Desktop\\flight_database.txt");
+public class hw2 {
+	static HashMap<Flight, ArrayList<Passenger>> data = new HashMap<Flight, ArrayList<Passenger>>();
+
+	public static void main(String[] args) throws IOException, InterruptedException {
+		FileReader fr = new FileReader("D:\\flight_database.txt");
 		BufferedReader br = new BufferedReader(fr);
-		if ( fr != null )
-		{
+		ArrayList<Passenger> totalPass = new ArrayList<Passenger>();
+		ArrayList<Flight> totalFlights = new ArrayList<Flight>();
+		if (fr != null) {
 			String currline;
-			while ( ( currline = br.readLine() ) != null )
-			{
+			while ((currline = br.readLine()) != null) {
 				String[] arey = currline.split("\n");
 				String[] commas = arey[0].split(",");
-				Flight f = new Flight(Integer.parseInt(commas[0]),Integer.parseInt(commas[1]));
+				Flight f = new Flight(Integer.parseInt(commas[0]), Integer.parseInt(commas[1]));
+				totalFlights.add(f);
 				ArrayList<Passenger> passen = new ArrayList<Passenger>();
-				for ( int i = 2 ; i < commas.length ; i++ )
-				{
+				for (int i = 2; i < commas.length; i++) {
 					int val = Integer.parseInt(commas[i]);
-					Passenger pass = new Passenger(val);
-					passen.add(pass);
+					boolean checkFlag = false;
+					for (Passenger p : totalPass) {
+						if (p.id == val) {
+							passen.add(p);
+							checkFlag = true;
+						}
+					}
+					if (checkFlag == false) {
+						Passenger pass = new Passenger(val);
+						totalPass.add(pass);
+						passen.add(pass);
+					}
 				}
-				data.put(f,passen);
+				data.put(f, passen);
 			}
 		}
-		int lt = 1;int rt = 101;
-		int lo = 1;int ro = 71;
+		int lt = 1;
+		int rt = 101;
+		int lo = 1;
+		int ro = 71;
 		Database db = new Database(data);
-		for ( int i = 0 ; i < 15 ; i++ )
-		{
-			int res = random(lt,rt);
-			if ( res >= 1 && res <= 20 )
-			{
-				int obj = random(lo,ro);
-				Passenger p = new Passenger(obj);
-				int fli = random(111,121);
-				int cap = getCapacity(fli);
-				Flight flight = new Flight(fli,cap);
-				Transacation t = new Transacation(db,flight,p,null,1);
-	
-			}
-			else if ( res >= 21 && res <= 40 )
-			{
-				int obj = random(lo,ro);
-				Passenger p = new Passenger(obj);
-				int fli = random(111,121);
-				int cap = getCapacity(fli);
-				Flight flight = new Flight(fli,cap);
-				Transacation t = new Transacation(db,flight,p,null,2);
-			}
-			else if ( res >= 41 && res <= 60 )
-			{
-				int obj = random(lo,ro);
-				Passenger p = new Passenger(obj);
-				Transacation t = new Transacation(db,null,p,null,3);
-			}
-			else if ( res >= 61 && res <= 80 )
-			{
-				Transacation t = new Transacation(db,null,null,null,4);
-			}
-			else
-			{
-				int obj = random(lo,ro);
-				Passenger p = new Passenger(obj);
-				int fli1 = random(111,121);
-				int cap1 = getCapacity(fli1);
-				Flight flight1 = new Flight(fli1,cap1);
-				
-				int fli2 = random(111,121);
-				int cap2 = getCapacity(fli2);
-				Flight flight2 = new Flight(fli2,cap2);
-				
-				Transacation t = new Transacation(db,flight1,p,flight2,5);
+		for (int i = 0; i < 1; i++) {
+			int res = random(lt, rt);
+//			System.out.println(res);
+			if (res >= 1 && res <= 20) {
+				int obj = random(lo, ro);
+				boolean checkFlag = false;
+				Passenger p1 = null;
+				for (Passenger p : totalPass) {
+					if (p.id == obj) {
+						p1 = p;
+//						System.out.println("here");
+//						System.out.println(p1.id);
+						checkFlag = true;
+					}
+				}
+				if (checkFlag == false) {
+					p1 = new Passenger(obj);
+//					System.out.println("new");
+				}
+				int fli = random(111, 121);
+				Flight f1 = null;
+//				System.out.println(obj);
+//				System.out.println(fli);
+				for (Flight f : totalFlights) {
+					if (f.name == fli) {
+						f1 = f;
+//						System.out.println("here");
+					}
+				}
+				Transacation t = new Transacation(db, f1, p1, null, 1);
+				Thread t1 = new Thread(t);
+				t1.start();
+			} else if (res >= 21 && res <= 40) {
+				int obj = random(lo, ro);
+				boolean checkFlag = false;
+				Passenger p1 = null;
+				for (Passenger p : totalPass) {
+					if (p.id == obj) {
+						p1 = p;
+//						System.out.println("here");
+//						System.out.println(p1.id);
+						checkFlag = true;
+					}
+				}
+				if (checkFlag == false) {
+					p1 = new Passenger(obj);
+//					System.out.println("new");
+				}
+				int fli = random(112, 113);
+				Flight f1 = null;
+				for (Flight f : totalFlights) {
+					if (f.name == fli) {
+						f1 = f;
+//						System.out.println("here");
+					}
+				}
+//				System.out.println(obj);
+//				System.out.println(fli);
+				Transacation t = new Transacation(db, f1, p1, null, 2);
+				Thread t1 = new Thread(t);
+				t1.start();
+			} else if (res >= 41 && res <= 60) {
+				int obj = random(lo, ro);
+				boolean checkFlag = false;
+				Passenger p1 = null;
+				for (Passenger p : totalPass) {
+					if (p.id == obj) {
+						p1 = p;
+//						System.out.println("here");
+//						System.out.println(p1.id);
+						checkFlag = true;
+					}
+				}
+				if (checkFlag == false) {
+					p1 = new Passenger(obj);
+//					System.out.println("new");
+				}
+//				System.out.println(obj);
+				Transacation t = new Transacation(db, null, p1, null, 3);
+				Thread t1 = new Thread(t);
+				t1.start();
+			} else if (res >= 61 && res <= 80) {
+				Transacation t = new Transacation(db, null, null, null, 4);
+				Thread t1 = new Thread(t);
+				t1.start();
+			} else {
+				int obj = random(lo, ro);
+				boolean checkFlag = false;
+				Passenger p1 = null;
+				for (Passenger p : totalPass) {
+					if (p.id == obj) {
+						p1 = p;
+						checkFlag = true;
+//						System.out.println("here");
+//						System.out.println(p1.id);
+					}
+				}
+				if (checkFlag == false) {
+					p1 = new Passenger(obj);
+//					System.out.println("new");
+				}
+				int fli = random(111, 121);
+				Flight f1 = null;
+				for (Flight f : totalFlights) {
+					if (f.name == fli) {
+						f1 = f;
+//						System.out.println("here");
+					}
+				}
+//				System.out.println(obj);
+//				System.out.println(fli);
+				fli = random(111, 121);
+				Flight f2 = null;
+				for (Flight f : totalFlights) {
+					if (f.name == fli) {
+						f2 = f;
+						System.out.println("here");
+					}
+				}
+				System.out.println(fli);
+				Transacation t = new Transacation(db, f1, p1, f2, 5);
+				Thread t1 = new Thread(t);
+				t1.start();
 			}
 		}
-		
+//		for (Flight f : db.data.keySet()) {
+//			System.out.print(f.name + " " + f.capacity + " ");
+//			ArrayList<Passenger> out = db.data.get(f);
+//			for (Passenger p : out) {
+//				System.out.print(p.id + " ");
+//			}
+//			System.out.println();
+//		}
+
 	}
-	
-	public static int random( int l , int h )
-	{
+
+	public static int random(int l, int h) {
 		Random r = new Random();
-		int resu = r.nextInt(h-l)+l;
+		int resu = r.nextInt(h - l) + l;
 		return resu;
 	}
-	
-	public static int getCapacity( int id )
-	{
+
+	public static int getCapacity(int id) {
 		int cap = 0;
-		for ( Flight f : data.keySet() )
-		{
-			if ( f.name == id )
-			{
+		for (Flight f : data.keySet()) {
+			if (f.name == id) {
 				cap = f.capacity;
 				break;
 			}
@@ -111,203 +199,176 @@ public class hw2
 	}
 }
 
-class Database
-{
-	HashMap<Flight,ArrayList<Passenger>> data;
-	public Database( HashMap<Flight,ArrayList<Passenger>> d )
-	{
-		data =d;
+class Database {
+	HashMap<Flight, ArrayList<Passenger>> data;
+	ReentrantLock Lock1;
+
+	public Database(HashMap<Flight, ArrayList<Passenger>> d) {
+		data = d;
 	}
 }
 
-class Passenger
-{
+class Passenger {
 	int id;
-	public Passenger( int i )
-	{
+
+	public Passenger(int i) {
 		id = i;
 	}
 }
 
-class Flight
-{
+class Flight {
 	int name;
 	int capacity;
-	public Flight( int n , int cap )
-	{
+
+	public Flight(int n, int cap) {
 		name = n;
 		capacity = cap;
 	}
 }
 
-
-class Transacation extends Thread
-{
-	HashMap<Flight,ArrayList<Passenger>> data;
+class Transacation extends Thread {
+	Database D1;
 	Flight f;
-	Passenger id;
+	Passenger ID;
 	Flight last;
 	boolean reser = false;
 	int which;
-	
-	public Transacation( Database d , Flight fli , Passenger pass , Flight f2 , int w )
-	{
-		data = d.data;
+
+	public Transacation(Database d, Flight fli, Passenger pass, Flight f2, int w) {
+		D1 = d;
 		f = fli;
-		pass = id;
+		ID = pass;
 		last = f2;
 		which = w;
 	}
-	
-	public void run()
-	{
-		 if ( which == 1 )
-		 {
-			 reserve();
-		 }
-		 else if ( which == 2 )
-		 {
-			 cancel();
-		 }
-		 else if ( which == 3 )
-		 {
-			 my_flight();
-		 }
-		 else if ( which == 4 )
-		 {
-			 total_reservation();
-		 }
-		 else
-		 {
-			 transfer();
-		 }
+
+	public void run() {
+		if (which == 1) {
+			reserve();
+		} else if (which == 2) {
+			cancel();
+		} else if (which == 3) {
+			my_flight();
+		} else if (which == 4) {
+			total_reservation();
+		} else {
+			transfer();
+		}
 	}
-	
-	public void reserve()
-	{
-		if ( reser == false )
-		{
-			boolean left = getCurrentSize(f.capacity,data.get(f));
-			if ( left == true )
-			{
-				if ( data.containsKey(f) )
-				{
-					ArrayList<Passenger> res = data.get(f);
-					res.add(id);
-					//f = new Flight(f.name,f.capacity+1);
-					data.put(f,res);
+
+	public void reserve() {
+		if (reser == false) {
+			boolean left = getCurrentSize(f.capacity, D1.data.get(f));
+			if (left == true) {
+				if (D1.data.containsKey(f)) {
+					ArrayList<Passenger> res = D1.data.get(f);
+					boolean cFlag = false;
+					for (Passenger p : res) {
+						if (p.id == ID.id) {
+							cFlag = true;
+						}
+					}
+					if (cFlag == false) {
+						res.add(ID);
+					}
+					D1.data.put(f, res);
 				}
 			}
-		}
-		else
-		{
+		} else {
 			reser = false;
-			boolean left = getCurrentSize(last.capacity,data.get(last));
-			if ( left == true )
-			{
-				if ( data.containsKey(last) )
-				{
-					ArrayList<Passenger> res = data.get(last);
-					res.add(id);
-					//f = new Flight(f.name,f.capacity+1);
-					data.put(last,res);
+			boolean left = getCurrentSize(last.capacity, D1.data.get(last));
+			if (left == true) {
+				if (D1.data.containsKey(last)) {
+					ArrayList<Passenger> res = D1.data.get(last);
+					boolean cFlag = false;
+					for (Passenger p : res) {
+						if (p.id == ID.id) {
+							cFlag = true;
+						}
+					}
+					if (cFlag == false) {
+						res.add(ID);
+					}
+					D1.data.put(last, res);
 				}
 			}
 		}
 	}
-	
-	public void cancel()
-	{
-		if ( data.containsKey(f) )
-		{
-			ArrayList<Passenger> res = data.get(f);
-			int pos = 0;
-			for ( int i = 0 ; i < res.size() ; i++ )
-			{
-				if ( res.get(i).id == id.id )
-				{
-					pos = i;
+
+	public void cancel() {
+		if (D1.data.containsKey(f)) {
+			ArrayList<Passenger> res = D1.data.get(f);
+			for (int i = 0; i < res.size(); i++) {
+				if (res.get(i).id == ID.id) {
+					res.remove(i);
 					break;
 				}
 			}
-			res.set(pos,new Passenger(0));
-			//f = new Flight(f.name,f.capacity-1);
-			data.put(f,res);
+			D1.data.put(f, res);
 		}
 	}
-	
-	public int my_flight()
-	{
+
+	public ArrayList<Flight> my_flight() {
+		ArrayList<Flight> fl = new ArrayList<Flight>();
+		for (Flight key : D1.data.keySet()) {
+			ArrayList<Passenger> output = D1.data.get(key);
+			for (Passenger it : output) {
+				// System.out.println(it.id);
+				if (it.id == ID.id) {
+					fl.add(key);
+				}
+			}
+		}
+		// for(Flight fll:fl) {
+		// System.out.print(fll.name+" ");
+		// }
+		// System.out.println();
+		return fl;
+	}
+
+	public int total_reservation() {
 		int count = 0;
-		for ( Flight key : data.keySet() )
-		{
-			ArrayList<Passenger> output = data.get(key);
-			for ( Passenger it : output )
-			{
-				if ( it.id == id.id )
-				{
+		for (Flight key : D1.data.keySet()) {
+			ArrayList<Passenger> output = D1.data.get(key);
+			for (Passenger it : output) {
+				if (it.id != 0) {
 					count++;
 				}
 			}
 		}
+		// System.out.println(count);
 		return count;
 	}
-	
-	public int total_reservation()
-	{
-		int count = 0;
-		for ( Flight key : data.keySet() )
-		{
-			ArrayList<Passenger> output = data.get(key);
-			for ( Passenger it : output )
-			{
-				if ( it.id != 0 )
-				{
-					count++;
-				}
-			}
-		}
-		return count;
-	}
-	
-	public void transfer()
-	{
-		ArrayList<Passenger> res = data.get(f);
+
+	public void transfer() {
+		ArrayList<Passenger> res = D1.data.get(f);
 		boolean found = false;
-		for ( Passenger val : res )
-		{
-			if ( val.id == id.id )
-			{
+		for (Passenger val : res) {
+			if (val.id == ID.id) {
 				found = true;
 				break;
 			}
 		}
-		
-		boolean left = getCurrentSize(last.capacity,data.get(last));
-		if ( found == true )
-		{
-			if ( left == true )
-			{
+
+		boolean left = getCurrentSize(last.capacity, D1.data.get(last));
+		if (found == true) {
+			if (left == true) {
 				cancel();
 				reser = true;
 				reserve();
 			}
 		}
 	}
-	
-	public boolean getCurrentSize(int limit,ArrayList<Passenger> arey)
-	{
+
+	public boolean getCurrentSize(int limit, ArrayList<Passenger> arey) {
 		boolean left = false;
 		int count = 0;
-		for ( Passenger pp : arey )
-		{
-			if ( pp.id != 0 )
-			{
+		for (Passenger pp : arey) {
+			if (pp.id != 0) {
 				count++;
 			}
 		}
-		if ( count <= limit )
-		{
+		if (count <= limit) {
 			left = true;
 		}
 		return left;
